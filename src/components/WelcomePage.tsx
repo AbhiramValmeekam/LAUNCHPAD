@@ -1,7 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Shield, Lock, Key, Database, ArrowLeft } from 'lucide-react';
+import { Shield, Lock, Key, Database, ArrowLeft, Wallet } from 'lucide-react';
+import { blockchainService } from '../services/blockchainService';
 
-export function WelcomePage({ onGetStarted, onBack }: { onGetStarted: () => void; onBack?: () => void }) {
+interface WelcomePageProps {
+  onGetStarted: () => void;
+  onBack?: () => void;
+}
+
+export const WelcomePage: React.FC<WelcomePageProps> = ({ onGetStarted, onBack }) => {
   const [scrollY, setScrollY] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
   const securityRef = useRef<HTMLDivElement>(null);
@@ -23,6 +29,33 @@ export function WelcomePage({ onGetStarted, onBack }: { onGetStarted: () => void
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleGetStarted = async () => {
+    try {
+      // Ask user if they want to connect to blockchain
+      const shouldConnectBlockchain = window.confirm(
+        'Would you like to connect to the blockchain for enhanced security?\n\n' +
+        'Benefits of blockchain connection:\n' +
+        '• Your passwords will be stored on the blockchain\n' +
+        '• Access your passwords from any device\n' +
+        '• Enhanced security through decentralization\n\n' +
+        'Note: This requires a Web3 wallet (like MetaMask)'
+      );
+
+      if (shouldConnectBlockchain) {
+        // Initialize blockchain connection
+        await blockchainService.initialize();
+        await blockchainService.requestAccount();
+      }
+
+      // Proceed to the next step regardless of blockchain choice
+      onGetStarted();
+    } catch (error) {
+      console.error('Failed to initialize blockchain:', error);
+      // Still proceed even if blockchain connection fails
+      onGetStarted();
+    }
+  };
 
   return (
     <div className="relative bg-black text-white">
@@ -142,7 +175,7 @@ export function WelcomePage({ onGetStarted, onBack }: { onGetStarted: () => void
             Powered by blockchain technology.
           </p>
           <button
-            onClick={onGetStarted}
+            onClick={handleGetStarted}
             className="bg-gradient-to-r from-cyan-400 to-cyan-500 text-white px-8 py-4 rounded-full text-lg font-medium hover:opacity-90 transition-all shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30"
             style={{
               transform: `translateY(${-scrollY * 0.3}px)`,
@@ -268,7 +301,7 @@ export function WelcomePage({ onGetStarted, onBack }: { onGetStarted: () => void
             to keep their digital life secure.
           </p>
           <button
-            onClick={onGetStarted}
+            onClick={handleGetStarted}
             className="bg-gradient-to-r from-cyan-400 to-cyan-500 text-white px-12 py-6 rounded-full text-xl font-medium hover:opacity-90 transition-all shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30"
           >
             Experience MPVault
@@ -287,4 +320,4 @@ export function WelcomePage({ onGetStarted, onBack }: { onGetStarted: () => void
       )}
     </div>
   );
-} 
+}; 

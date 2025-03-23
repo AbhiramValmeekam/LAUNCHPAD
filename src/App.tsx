@@ -13,7 +13,7 @@ import { anonymousStorageService } from './services/anonymousStorageService';
 import { AnonymousMode } from './components/AnonymousMode';
 
 interface TransactionState {
-  status: 'pending' | 'success' | 'error';
+  status: 'pending' | 'success' | 'error' | 'warning' | 'info';
   message: string;
   txHash?: string;
 }
@@ -54,37 +54,91 @@ function App() {
 
   const handleUnlock = async () => {
     try {
+      // Clear existing state
+      setPasswords([]);
+      setTransaction(null);
+
+      // Generate new master key
       const key = await generateMasterKey(masterPassword);
       setMasterKey(key);
 
       if (!isAnonymous) {
-        setTransaction({
-          status: 'pending',
-          message: 'Loading passwords from blockchain...'
-        });
+        // Ask user if they want to connect to blockchain
+        const shouldConnectBlockchain = window.confirm(
+          'Would you like to connect to the blockchain to access your passwords?\n\n' +
+          'This will allow you to:\n' +
+          '• Access your passwords from any device\n' +
+          '• Restore your passwords if local storage is cleared\n' +
+          '• Benefit from blockchain security\n\n' +
+          'Note: This requires a Web3 wallet (like MetaMask)'
+        );
 
-        try {
-          const encryptedData = await blockchainService.loadPassword();
-          if (encryptedData) {
-            const decryptedData = await decryptData(encryptedData, key);
-            const loadedPasswords = JSON.parse(decryptedData);
-            setPasswords(loadedPasswords);
-            setTransaction({
-              status: 'success',
-              message: 'Passwords loaded successfully'
-            });
-          }
-        } catch (error) {
-          console.error('Failed to load from blockchain:', error);
+        if (shouldConnectBlockchain) {
           setTransaction({
-            status: 'error',
-            message: 'Failed to load from blockchain, checking local storage...'
+            status: 'pending',
+            message: 'Connecting to blockchain...'
           });
-          
+
+          try {
+            // Reinitialize blockchain connection
+            await blockchainService.initialize();
+            const address = await blockchainService.requestAccount();
+            setWalletAddress(address);
+
+            // Load passwords from blockchain
+            const encryptedData = await blockchainService.loadPassword();
+            if (encryptedData) {
+              try {
+                const decryptedData = await decryptData(encryptedData, key);
+                const loadedPasswords = JSON.parse(decryptedData);
+                setPasswords(loadedPasswords);
+                setTransaction({
+                  status: 'success',
+                  message: 'Passwords loaded successfully from blockchain'
+                });
+                // Store the current master key hash in local storage
+                localStorage.setItem('masterKeyHash', await crypto.subtle.digest('SHA-256', new TextEncoder().encode(masterPassword)).then(hash => Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('')));
+                // Update local storage with blockchain data
+                localStorage.setItem('passwords', JSON.stringify(loadedPasswords));
+              } catch (decryptError) {
+                console.error('Failed to decrypt blockchain data:', decryptError);
+                setTransaction({
+                  status: 'info',
+                  message: 'Starting fresh vault with new master key'
+                });
+                // Clear any existing passwords from local storage
+                localStorage.removeItem('passwords');
+                setPasswords([]);
+              }
+            } else {
+              setTransaction({
+                status: 'info',
+                message: 'Starting new password vault'
+              });
+            }
+          } catch (error) {
+            console.error('Failed to load from blockchain:', error);
+            setTransaction({
+              status: 'error',
+              message: 'Failed to connect to blockchain. Please try again.'
+            });
+            return; // Don't proceed if blockchain connection fails
+          }
+        } else {
+          // Load from local storage only
           const localData = localStorage.getItem('passwords');
           if (localData) {
             const localPasswords = JSON.parse(localData);
             setPasswords(localPasswords);
+            setTransaction({
+              status: 'info',
+              message: 'Loaded passwords from local storage'
+            });
+          } else {
+            setTransaction({
+              status: 'info',
+              message: 'Starting new password vault'
+            });
           }
         }
       }
@@ -141,27 +195,45 @@ function App() {
       localStorage.setItem('passwords', JSON.stringify(updatedPasswords));
       setPasswords(updatedPasswords);
 
-      // Then attempt to save to blockchain if not in anonymous mode
+      // If not in anonymous mode, ask for blockchain connection
       if (!isAnonymous) {
-        setTransaction({
-          status: 'pending',
-          message: 'Saving password to blockchain...'
-        });
+        const shouldSaveToBlockchain = window.confirm(
+          'Would you like to save this password to the blockchain for additional security? ' +
+          'This will require connecting your wallet if not already connected.'
+        );
 
-        try {
-          const encryptedData = await encryptData(JSON.stringify(updatedPasswords), masterKey);
-          const result = await blockchainService.savePassword(encryptedData);
-          
+        if (shouldSaveToBlockchain) {
           setTransaction({
-            status: 'success',
-            message: 'Password saved to blockchain',
-            txHash: result.tx_hash
+            status: 'pending',
+            message: 'Connecting to blockchain...'
           });
-        } catch (error) {
-          console.error('Failed to save to blockchain:', error);
+
+          try {
+            // Ensure blockchain connection
+            await blockchainService.initialize();
+            const address = await blockchainService.requestAccount();
+            setWalletAddress(address);
+
+            // Save to blockchain
+            const encryptedData = await encryptData(JSON.stringify(updatedPasswords), masterKey);
+            const result = await blockchainService.savePassword(encryptedData);
+            
+            setTransaction({
+              status: 'success',
+              message: 'Password saved to blockchain',
+              txHash: result.tx_hash
+            });
+          } catch (error) {
+            console.error('Failed to save to blockchain:', error);
+            setTransaction({
+              status: 'error',
+              message: 'Failed to save to blockchain. Password saved locally only.'
+            });
+          }
+        } else {
           setTransaction({
-            status: 'error',
-            message: 'Saved locally, but failed to save to blockchain'
+            status: 'info',
+            message: 'Password saved locally only'
           });
         }
       }
