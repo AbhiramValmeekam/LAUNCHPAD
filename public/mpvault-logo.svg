@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#06b6d4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0891b2;stop-opacity:1" />
+    </linearGradient>
+    <filter id="blur">
+      <feGaussianBlur stdDeviation="2" />
+    </filter>
+  </defs>
+  <g>
+    <!-- Shield background with glow -->
+    <path d="M256 32L32 128v160c0 152.25 134.25 280 224 312 89.75-32 224-159.75 224-312V128L256 32z" 
+          fill="url(#glow)" opacity="0.1" filter="url(#blur)" />
+    
+    <!-- Main shield outline -->
+    <path d="M256 32L32 128v160c0 152.25 134.25 280 224 312 89.75-32 224-159.75 224-312V128L256 32z" 
+          stroke="url(#glow)" stroke-width="8" fill="none" />
+    
+    <!-- Lock body -->
+    <rect x="176" y="192" width="160" height="160" rx="16" 
+          stroke="url(#glow)" stroke-width="8" fill="none" />
+    
+    <!-- Lock shackle -->
+    <path d="M192 192v-48c0-35.346 28.654-64 64-64s64 28.654 64 64v48" 
+          stroke="url(#glow)" stroke-width="8" fill="none" />
+    
+    <!-- Diamond in the center -->
+    <path d="M256 232l32 32-32 32-32-32z" 
+          stroke="url(#glow)" stroke-width="4" fill="none" />
+  </g>
+</svg> 

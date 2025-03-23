@@ -33,6 +33,32 @@ export function WelcomePage({ onGetStarted, onBack }: { onGetStarted: () => void
             to { opacity: 1; transform: translateY(0); }
           }
           
+          @keyframes pulse {
+            0% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.05); filter: brightness(1.2); }
+            100% { transform: scale(1); filter: brightness(1); }
+          }
+          
+          @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+          }
+          
+          @keyframes glow {
+            0% { filter: drop-shadow(0 0 2px #06b6d4) drop-shadow(0 0 4px #06b6d4); }
+            50% { filter: drop-shadow(0 0 6px #06b6d4) drop-shadow(0 0 12px #06b6d4); }
+            100% { filter: drop-shadow(0 0 2px #06b6d4) drop-shadow(0 0 4px #06b6d4); }
+          }
+          
+          .logo-container {
+            animation: float 3s ease-in-out infinite;
+          }
+          
+          .logo-image {
+            animation: glow 3s ease-in-out infinite;
+          }
+          
           .fade-up {
             opacity: 0;
             animation: fadeUp 1s ease forwards;
@@ -82,6 +108,19 @@ export function WelcomePage({ onGetStarted, onBack }: { onGetStarted: () => void
           }}
         />
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+          <div 
+            className="logo-container mb-8"
+            style={{
+              transform: `translateY(${-scrollY * 0.5}px)`,
+              opacity: Math.max(0, 1 - scrollY / 500)
+            }}
+          >
+            <img 
+              src="/mpvault-logo.svg" 
+              alt="MPVault Logo" 
+              className="logo-image w-48 h-48 mb-6"
+            />
+          </div>
           <h1 
             className="text-8xl font-bold mb-6 tracking-tight bg-gradient-to-r from-white via-cyan-100 to-white bg-clip-text text-transparent"
             style={{
