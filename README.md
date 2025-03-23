@@ -150,5 +150,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## 📧 Contact
 
 For any queries or support, please contact:
-- Email: abhiramvalmeekam@gmail.com
+- Email: abhiramsharma567@gmail.com
 - GitHub: [@AbhiramValmeekam](https://github.com/AbhiramValmeekam) 
